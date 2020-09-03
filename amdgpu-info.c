@@ -3,7 +3,7 @@
 #include <string.h> //to get strcspn for removing newline
 #include <unistd.h> //sleep
 #include <signal.h> //sigint ctrl+c
-//#include <pthread.h> // TODO POSIX Thread 
+#include <pthread.h> // TODO POSIX Thread 
 
 #define UPDATETIME 1
 #define SYSDIR "/sys/class/drm/card0/device/hwmon/hwmon1/"
@@ -108,14 +108,10 @@ char *getMemoryStates()
 // 0: 300Mhz *
 // 1: 483Mhz 
 // 2....
-	
-int main()
-{
-    signal(SIGINT, intHandler);
-    // http://rosettacode.org/wiki/Terminal_control/Preserve_screen#C
-    printf("\033[?1049h\033[H");
 
-    while(keepRunning) {
+void *updateThread()
+{
+	while(keepRunning) {
         // TODO Flags table https://www.eecs.wsu.edu/~cs150/reading/printf.htm
         // Move to top of screen again
         printf("\033[2J");
@@ -141,6 +137,19 @@ int main()
         fflush(stdout);
         sleep(UPDATETIME);
     }
+}
+
+int main()
+{
+    signal(SIGINT, intHandler);
+    // http://rosettacode.org/wiki/Terminal_control/Preserve_screen#C
+    printf("\033[?1049h\033[H");
+    
+    pthread_t thread;
+    pthread_create(&thread, NULL, updateThread, NULL); 
+    
+    while(keepRunning);
     printf("\033[?1049l");// Clear alternative buffer
+    pthread_join(thread, NULL);
     return 0;
 }
